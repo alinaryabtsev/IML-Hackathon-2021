@@ -17,16 +17,9 @@ def split_data(file_name):
     col2 = "revenue"
 
     y = df[[col1,col2]]
-    # print(y.head())
     X = df.drop([col1,col2],axis=1)
-    # print(X.head())
-    # print(X.columns)
     X_train, X_tmp, y_train, y_tmp = train_test_split(X,y, test_size= TEST_RATIO+VALIDATION_RATIO, random_state = 5)
     X_val, X_test, y_val, y_test = train_test_split(X_tmp,y_tmp, test_size= 0.5, random_state = 5)
-    print(X.shape[0])
-    print(X_train.shape[0])
-    print(X_test.shape[0])
-    print(X_val.shape[0])
 
     df_train = pd.concat([X_train, y_train], axis=1)
     df_validation = pd.concat([X_val, y_val], axis=1)
@@ -35,9 +28,6 @@ def split_data(file_name):
     df_train.to_csv("train.csv")
     df_validation.to_csv("validation.csv")
     df_test.to_csv("test.csv")
-
-
-
 
 
 
