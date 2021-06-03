@@ -14,7 +14,7 @@ class Model:
 
     def train_model(self):
         self.revenue_regression = LinearRegression().fit(self.matrix, self.revenue_response)
-        self.vote_regression = LinearRegression().fit(self.matrix, self.revenue_response)
+        self.vote_regression = LinearRegression().fit(self.matrix, self.vote_average_response)
 
     def predict_vote_average(self, samples):
         self.vote_regression.predict(samples)
