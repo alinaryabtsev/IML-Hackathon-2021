@@ -31,12 +31,16 @@ def split_data(file_name):
 
 
 
+
 if __name__ == '__main__':
     if len(sys.argv) >1:
         file_name = sys.argv[1]
     else:
         file_name = 'movies_dataset.csv'
     split_data(file_name)
+
+
+
     
 
 

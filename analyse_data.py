@@ -1,3 +1,6 @@
+"""
+Analyse features: original_language, original_title, overview, vote_count, production_companies
+"""
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
@@ -89,8 +92,41 @@ def convert_json_to_dict(preprocessing, column):
     col = df[column].astype('str')
     col = col.apply(lambda x: ast.literal_eval(x))
     return col
+  
+
+def original_language_plot(preprocessing, response):
+    """
+    Plots mean of response={revenue,vote_average} as a function of original_language
+    :param preprocessing:
+    :return:
+    """
+    fig, ax = plt.subplots(figsize=(10, 7))
+    languages = pd.unique(preprocessing.df["original_language"])
+    response_means = [preprocessing.df.loc[preprocessing.df['original_language'] == lan][response].mean() for lan in
+                      languages]
+    plt.bar(languages, response_means)
+    mean_val = sum(response_means) / len(response_means)
+    ax.axhline(mean_val)
+    plt.savefig(r"C:\Users\morga\IML-Hackathon-2021\plot_revenue_language.png")
+    plt.clf()
 
 
+def vote_count_plot(preprocessing):
+    """
+    Plots revenue as a function of vote_count
+    :param df_train:
+    :return:
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    plt.scatter(preprocessing.df[:]["vote_count"], preprocessing.df[:]["revenue"])
+    ax.set_xlabel('vote_count')
+    ax.set_ylabel('revenue')
+    ax.legend()
+    plt.savefig(r"C:\Users\morga\IML-Hackathon-2021\plot_vote_count.png")
+    plt.clf()
+  
+  
 def main():
     preprocessing = Preprocessing("train.csv")
 
@@ -99,9 +135,10 @@ def main():
     # plot_corrolation(preprocessing)
     # length_of_tagline_effect(preprocessing)
     # plot_corrolation(preprocessing)
+    
+    response = "vote_average"
+    original_language_plot(preprocessing, response)
+    vote_count_plot(preprocessing)
 
 if __name__ == '__main__':
     main()
-
-
-

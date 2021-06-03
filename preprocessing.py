@@ -200,7 +200,23 @@ class Preprocessing:
         # get rid of homepage column
         self.df.drop(columns=["homepage"], inplace=True)
 
-
     def convert_json_to_dict(self, column):
-        self.df[column] = self.df[column].apply(
-            lambda s: list(ast.literal_eval(s)))
+        self.df[column] = self.df[column].apply(lambda s: list(ast.literal_eval(s)))
+
+    def replace_na_in_overview(self):
+        self.df["overview"] = self.df["overview"].fillna("")
+
+    def original_language_feature(self):
+        """
+        One-Hot feature original_language,leave columns of language only for language with higher incomes then the average
+        :param :
+        :return:
+        """
+        self.df = pd.get_dummies(data=self.df, columns=(["original_language"]))
+        languages = pd.unique(self.df["original_language"])
+        revenue_means = [self.df.loc[self.df['original_language'] == lan]["revenue"].mean() for lan in languages]
+        mean_val = sum(revenue_means) / len(revenue_means)
+        for one_lan in languages:
+            if one_lan < mean_val:
+                self.df.drop([f"original_language_{one_lan}"])
+
