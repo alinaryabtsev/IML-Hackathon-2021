@@ -200,7 +200,6 @@ class Preprocessing:
         # get rid of homepage column
         self.df.drop(columns=["homepage"], inplace=True)
 
-
     def convert_json_to_dict(self, column):
         self.df[column] = self.df[column].apply(
             lambda s: list(ast.literal_eval(s)))

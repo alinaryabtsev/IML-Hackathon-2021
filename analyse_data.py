@@ -96,7 +96,7 @@ def main():
 
     # length_of_tagline_effect(preprocessing)
     # length_of_title_effect(preprocessing)
-    # plot_corrolation(preprocessing)
+    plot_corrolation(preprocessing)
     # length_of_tagline_effect(preprocessing)
     # plot_corrolation(preprocessing)
 
