@@ -2,6 +2,10 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from preprocessing import Preprocessing
+import json as js
+import ast
+import numpy as np
+
 
 
 def order_titles_by_length(preprocessing):
@@ -53,6 +57,36 @@ def length_of_tagline_effect(preprocessing):
     plot_revenue_or_vote_average_over_length_of_text(df, "tagline", "revenue")
     plot_revenue_or_vote_average_over_length_of_text(df, "tagline", "vote_average")
 
+def preprocess_production_countries():
+    countries = df["production_countries"]
+    print(countries.head())
+
+
+def preprocess_runtime():
+    df.runtime = df.runtime.where(df.runtime.between(1, 1440))
+
+    sns.barplot(df.runtime, df.revenue)
+    # plt.bar(df.runtime, df.revenue)
+    # creating the bar plot
+    plt.show()
+
+
+def preprocess_spoken_languages():
+    # print(df.spoken_languages.head())
+    pass
+
+
+def preprocess_homepage():
+    homepage = df["homepage"]
+    print(homepage.head())
+
+
+def convert_json_to_dict(column):
+    col = df[column].astype('str')
+    col = col.apply(lambda x: ast.literal_eval(x))
+    return col
+
+
 
 def main():
     preprocessing = Preprocessing("train.csv")
@@ -62,3 +96,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
