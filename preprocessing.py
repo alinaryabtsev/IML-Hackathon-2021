@@ -14,4 +14,15 @@ class Preprocessing:
     def replace_na_in_title(self):
         self.df["title"] = self.df["title"].fillna("")
 
+    def drop_not_released(self):
+        self.df = self.df[self.df.status == "Released"]
+
+    def drop_not_relevant_columns(self):
+        not_relavant_columns = ["original title",
+                                "overview",
+                                "keywords",
+                                "title",
+                                "tagline",
+                                "status"]
+        self.df = self.df.drop(columns=not_relavant_columns)
 
