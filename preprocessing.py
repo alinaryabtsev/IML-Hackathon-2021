@@ -1,12 +1,17 @@
 import pandas as pd
 import numpy as np
 import ast
+from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.corpus import stopwords
+import nltk
 
 
 class Preprocessing:
     mean_val = 0
     genres_ids = set()
     original_languages = []
+    top_words = {1: [], 2: [], 3: [], 4: [], 5: [], 6: []}
+    top_words_in_overview_mean = dict()
 
     def __init__(self, filename):
         self.df = pd.read_csv(filename)
@@ -23,7 +28,6 @@ class Preprocessing:
     def drop_not_relevant_columns(self):
         not_relavant_columns = ["id",
                                 "original_title",
-                                "overview",
                                 "keywords",
                                 "title",
                                 "tagline",
@@ -103,22 +107,16 @@ class Preprocessing:
         self.turn_value_to_nan({'year': 2021}, ">")
         self.turn_values_to_int(['year'])
         self.turn_values_to_int(['month', 'day'], new_type=np.int8)
-        # print("******")
         self.turn_nan_value_to_mean(['year', 'day', 'month'])
         self.df = self.df.drop('release_date', axis=1)
-        # print(self.df.columns)
-        # return ['year','month', 'day' ]
 
     def preprocess_budget(self):
         added_cols = self.turn_value_to_nan({'budget': 10}, "<")
-        # my_cols = my_cols + added_cols
         self.turn_nan_value_to_mean(['budget'])
 
     def preprocess_belongs_to_collection(self):
-        self.df['belongs_to_collection'] = self.df['belongs_to_collection'].fillna(
-            "")
-        self.df['binary_collection'] = (
-                self.df["belongs_to_collection"] != "").astype(int)
+        self.df['belongs_to_collection'] = self.df['belongs_to_collection'].fillna("")
+        self.df['binary_collection'] = (self.df["belongs_to_collection"] != "").astype(int)
         self.df = self.df.drop('belongs_to_collection', axis=1)
 
     def preprocess_genres(self, train=True):
@@ -242,7 +240,87 @@ class Preprocessing:
                 self.df[f"original_language_{lan}"] = (lan == self.df["original_language"]).astype(int)
             self.df.drop(columns=["original_language"], inplace=True)
 
-    def process_all(self, train=True):
+    def preprocess_overview(self, train=True, revenue=True):
+        """
+        Extracting all the words, tokenizing them and giving them weights according to revenue and vote_average,
+        to know which words affect the most
+        """
+        if revenue:
+            feature_to_process = 'revenue'
+        else:
+            feature_to_process = 'vote_average'
+        stop_words = set(stopwords.words("english"))
+
+        if train:
+            nltk.download('punkt')
+            s = ""
+            for x in self.df["overview"]:
+                s += x + "\nto\n" if type(x) == str else ""
+            nltk.download("stopwords")
+            words_in_s = word_tokenize(s)
+            words_dict_4_ = {word: 0 for word in words_in_s if word.casefold() not in stop_words}
+
+            for x, f_t_p in zip(self.df["overview"], self.df[feature_to_process]):
+                if type(x) == str and len(x) > 0:
+                    tokenized_x = word_tokenize(x + "\nto")
+                    tokenized_x = [w for w in tokenized_x if w.casefold() not in stop_words]
+                    word_num = len(tokenized_x)
+                    for w in tokenized_x:
+                        words_dict_4_[w] += (f_t_p* x.count(w)) / word_num
+            words_dict_4_ = dict(sorted(words_dict_4_.items(), key=lambda item: item[1]))
+
+            keys_list = list(words_dict_4_.keys())
+            tmp = []
+            for x in keys_list:
+                if len(x) > 2:
+                    tmp.append(x)
+            keys_list = tmp
+            #####    TO SAVE for feature_to_process   ####
+            # Preprocessing.top_words[1] = keys_list[-5:]
+            # Preprocessing.top_words[2] = keys_list[-12:-5]
+            # Preprocessing.top_words[3] = keys_list[-25:-12]
+            # Preprocessing.top_words[4] = keys_list[-50:-25]
+            # Preprocessing.top_words[5] = keys_list[-130:-50]
+            # Preprocessing.top_words[6] = keys_list[-500:-130]
+            Preprocessing.top_words[1] = keys_list[-2:]
+            Preprocessing.top_words[2] = keys_list[-7:-2]
+            Preprocessing.top_words[3] = keys_list[-20:-7]
+            Preprocessing.top_words[4] = keys_list[-50:-20]
+            Preprocessing.top_words[5] = keys_list[-130:-50]
+            Preprocessing.top_words[6] = keys_list[-500:-130]
+
+        # adding_to_df
+        top_words_in_overview = {1: [], 2: [], 3: [], 4: [], 5: [], 6: []}
+        for x in self.df["overview"]:
+            if type(x) == str and len(x) > 0:
+                tokenized_x = word_tokenize(x + "\nto")
+                tokenized_x = [w for w in tokenized_x if w.casefold() not in stop_words]
+                word_num = len(tokenized_x)
+                for i in range(1, 7):
+                    score_i = 0
+                    for s in Preprocessing.top_words[i]:
+                        if s in tokenized_x:
+                            score_i += x.count(s)
+                    score_i *= 1 / word_num
+                    top_words_in_overview[i].append(score_i)
+            else:
+                for i in range(1, 7):
+                    top_words_in_overview[i].append(np.nan)
+
+        if train:
+            # add to class Attributes feature_to_process
+            for i in range(1, 7):
+                np_arr = np.array(top_words_in_overview[i])
+                Preprocessing.top_words_in_overview_mean[i] = np.nanmean(np_arr)
+
+        for i in range(1, 7):
+            self.df[f'top_words_{feature_to_process}_{str(i)}'] = top_words_in_overview[i]
+            self.df[f'top_words_{feature_to_process}_{str(i)}'].fillna(Preprocessing.top_words_in_overview_mean[i],
+                                                                       inplace=True)
+
+        self.df.drop(columns=["overview"], inplace=True)
+
+    def process_revenue(self, train=True):
         if train:
             self.drop_not_released()
             self.delete_not_released_movies()
@@ -258,6 +336,29 @@ class Preprocessing:
         self.preprocess_cast()
         self.preprocess_crew()
         self.preprocess_homepage()
+        self.preprocess_overview(train, True)
+        self.drop_not_relevant_columns()
+        return self.df
+
+    def process_vote_avergae(self, train=True):
+        if train:
+            self.drop_not_released()
+            self.delete_not_released_movies()
+        # self.original_language_feature(train)
+        self.preprocess_date()
+        # self.df.drop(columns=["release_date"], inplace=True)
+        # self.preprocess_budget()
+        self.preprocess_belongs_to_collection()
+        self.preprocess_genres(train)
+        self.preprocess_production_countries()
+        self.preprocess_production_companies()
+        self.preprocess_runtime()
+        self.preprocess_spoken_languages()
+        self.preprocess_cast()
+        self.preprocess_crew()
+        self.preprocess_overview(train, False)
+        # self.preprocess_homepage()
+        self.df.drop(columns=["original_language", "budget", "homepage"], inplace=True)
         self.drop_not_relevant_columns()
         return self.df
 

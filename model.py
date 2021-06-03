@@ -1,35 +1,68 @@
 from preprocessing import Preprocessing
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error
 import math
+import pickle
 
 
 class Model:
     def __init__(self):
-        preprocessing = Preprocessing("train.csv")
-        self.matrix = preprocessing.process_all()
-        self.revenue_response = self.matrix["revenue"].to_numpy()
-        self.vote_average_response = self.matrix["vote_average"].to_numpy()
-        self.matrix.drop(columns=["vote_average", "revenue"], inplace=True)
+        preprocessing_vote = Preprocessing("train.csv")
+        preprocessing_revenue = Preprocessing("train.csv")
+        self.vote_matrix = preprocessing_vote.process_vote_avergae()
+        self.revenue_matrix = preprocessing_revenue.process_revenue()
+        self.revenue_response = self.revenue_matrix["revenue"].to_numpy()
+        self.vote_average_response = self.vote_matrix["vote_average"].to_numpy()
+        self.vote_matrix.drop(columns=["vote_average"], inplace=True)
+        self.revenue_matrix.drop(columns=["revenue"], inplace=True)
         self.vote_regression = None
         self.revenue_regression = None
-        self.matrix = self.matrix.to_numpy()
+        self.vote_matrix = self.vote_matrix.to_numpy()
+        self.revenue_matrix = self.revenue_matrix.to_numpy()
         self.vote_hat = None
         self.revenue_hat = None
 
     def process_test_data(self, csv_file):
+        return self.process_test_revenue_data(csv_file), self.process_test_vote_average_data(csv_file)
+
+    def process_test_vote_average_data(self, csv_file):
         preprocessing = Preprocessing(csv_file)
-        return preprocessing.process_all(False)
+        return preprocessing.process_vote_avergae(False)
+
+    def process_test_revenue_data(self, csv_file):
+        preprocessing = Preprocessing(csv_file)
+        return preprocessing.process_revenue(False)
 
     def train_model(self):
-        self.vote_regression = RandomForestRegressor(max_depth=180, random_state=0).fit(self.matrix,
-                                                                                        self.vote_average_response)
-        self.revenue_regression = RandomForestRegressor(max_depth=180, random_state=0).fit(self.matrix,
-                                                                                           self.revenue_response)
+        self.vote_regression = RandomForestRegressor(max_depth=180,
+                                                     random_state=0,
+                                                     min_samples_split=5).fit(self.vote_matrix,
+                                                                              self.vote_average_response)
+        self.revenue_regression = RandomForestRegressor(max_depth=180,
+                                                        random_state=0,
+                                                        min_samples_split=7).fit(self.revenue_matrix,
+                                                                                 self.revenue_response)
 
-    def predict_vote_average(self, samples, y_true):
-        return math.sqrt(self.vote_regression.score(samples, y_true))
+    def predict_vote_average(self, samples):
+        return self.vote_regression.predict(samples)
 
-    def predict_revenue(self, samples, y_true):
-        return math.sqrt(self.revenue_regression.score(samples, y_true))
+    def predict_revenue(self, samples):
+        return self.revenue_regression.predict(samples)
+
+    def score(self, y_predicted, y_true):
+        return math.sqrt(mean_squared_error(y_true, y_predicted))
+
+    @classmethod
+    def serialize_model(cls, obj, filename="our_super_model"): #save obj in file
+        file = open(filename, 'wb')
+        pickle.dump(obj, file )
+        file.close()
+
+    @classmethod
+    def deserialize_model(cls, filename="our_super_model"): #loads obj from file
+        with open(filename, 'rb') as f:
+            obj = pickle.load(f)
+            print(type(obj))
+            return obj
 
 
