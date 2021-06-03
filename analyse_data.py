@@ -13,10 +13,7 @@ def preprocess_production_countries():
 
 def preprocess_runtime():
     df.runtime = df.runtime.where(df.runtime.between(1, 1440))
-
-    sns.barplot(df.runtime, df.revenue)
-    # plt.bar(df.runtime, df.revenue)
-    # creating the bar plot
+    sns.barplot(df.runtime, df.revenue) # creating the bar plot
     plt.show()
 
 
