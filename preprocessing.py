@@ -1,13 +1,13 @@
 import pandas as pd
 import numpy as np
 import ast
-import random
-import sys
-from pandas.api.types import is_numeric_dtype
-from pandas.core.frame import DataFrame
 
 
 class Preprocessing:
+    mean_val = 0
+    genres_ids = set()
+    original_languages = []
+
     def __init__(self, filename):
         self.df = pd.read_csv(filename)
 
@@ -16,6 +16,19 @@ class Preprocessing:
 
     def replace_na_in_tagline(self):
         self.df["tagline"] = self.df["tagline"].fillna("")
+
+    def drop_not_released(self):
+        self.df = self.df[self.df.status == "Released"]
+
+    def drop_not_relevant_columns(self):
+        not_relavant_columns = ["id",
+                                "original_title",
+                                "overview",
+                                "keywords",
+                                "title",
+                                "tagline",
+                                "status"]
+        self.df = self.df.drop(columns=not_relavant_columns)
 
     def get_columns_names(self):
         return self.df.columns
@@ -70,11 +83,11 @@ class Preprocessing:
     def delete_not_released_movies(self):
         # print(last_year_df[['release_date']].dtypes)
         # last_year_df['today'] = pd.Timestamp('today').strftime("%Y-%m-%d")
-        self.get_df()['today'] = pd.to_datetime(
-            pd.to_datetime('today').strftime("%Y-%m-%d"))
-        self.get_df()['days_till_release'] = (
-            self.get_df()['release_date'] - self.get_df()['today']).dt.days
-        self.df = self.get_df()[self.get_df()['days_till_release'] < 0]
+        # df = self.get_df()
+        self.df['today'] = pd.to_datetime(pd.to_datetime('today').strftime("%Y-%m-%d"))
+        self.df['release_date'] = pd.to_datetime(self.df['release_date'])
+        self.df['days_till_release'] = (self.df['release_date'] - self.df['today']).dt.days
+        self.df = self.df[self.df['days_till_release'] < 0]
         self.df = self.df.drop('days_till_release', axis=1)
         self.df = self.df.drop('today', axis=1)
 
@@ -105,21 +118,23 @@ class Preprocessing:
         self.df['belongs_to_collection'] = self.df['belongs_to_collection'].fillna(
             "")
         self.df['binary_collection'] = (
-            self.df["belongs_to_collection"] != "").astype(int)
+                self.df["belongs_to_collection"] != "").astype(int)
         self.df = self.df.drop('belongs_to_collection', axis=1)
 
-    def preprocess_genres(self):
+    def preprocess_genres(self, train=True):
         self.df['genres'] = self.df.genres.fillna("[]")
         self.convert_json_to_dict("genres")
-        dics = [dic for dic in self.df["genres"]]
-        
-        keys = set()
-        for lst in dics:
-            for dic in lst:
-                keys.add(dic["name"])
-        
-        for key in keys:
+
+        if train:
+            dics = [dic for dic in self.df["genres"]]
+            for lst in dics:
+                for dic in lst:
+                    Preprocessing.genres_ids.add(dic["name"])
+
+        for key in Preprocessing.genres_ids:
             self.df["genres" + f"_{key}"] = [1 if f"{key}" in string else 0 for string in self.df['genres'].astype('str')]
+
+        self.df.drop(columns=["genres"], inplace=True)
 
     def preprocess_production_countries(self):
         """
@@ -206,17 +221,44 @@ class Preprocessing:
     def replace_na_in_overview(self):
         self.df["overview"] = self.df["overview"].fillna("")
 
-    def original_language_feature(self):
+    def original_language_feature(self, train=True):
         """
         One-Hot feature original_language,leave columns of language only for language with higher incomes then the average
         :param :
         :return:
         """
-        self.df = pd.get_dummies(data=self.df, columns=(["original_language"]))
         languages = pd.unique(self.df["original_language"])
         revenue_means = [self.df.loc[self.df['original_language'] == lan]["revenue"].mean() for lan in languages]
-        mean_val = sum(revenue_means) / len(revenue_means)
-        for one_lan in languages:
-            if one_lan < mean_val:
-                self.df.drop([f"original_language_{one_lan}"])
+        if train:
+            Preprocessing.mean_val = sum(revenue_means) / len(revenue_means)
+            self.df = pd.get_dummies(data=self.df, columns=(["original_language"]))
+            for i, one_lan in enumerate(languages):
+                if revenue_means[i] >= Preprocessing.mean_val:
+                    Preprocessing.original_languages.append(f"original_language_{one_lan}")
+                else:
+                    self.df.drop(columns=[f"original_language_{one_lan}"], inplace=True)
+        else:
+            for lan in Preprocessing.original_languages:
+                self.df[f"original_language_{lan}"] = (lan == self.df["original_language"]).astype(int)
+            self.df.drop(columns=["original_language"], inplace=True)
+
+    def process_all(self, train=True):
+        if train:
+            self.drop_not_released()
+            self.delete_not_released_movies()
+        self.original_language_feature(train)
+        self.preprocess_date()
+        self.preprocess_budget()
+        self.preprocess_belongs_to_collection()
+        self.preprocess_genres(train)
+        self.preprocess_production_countries()
+        self.preprocess_production_companies()
+        self.preprocess_runtime()
+        self.preprocess_spoken_languages()
+        self.preprocess_cast()
+        self.preprocess_crew()
+        self.preprocess_homepage()
+        self.drop_not_relevant_columns()
+        return self.df
+
 
