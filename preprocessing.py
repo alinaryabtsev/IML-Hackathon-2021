@@ -12,6 +12,22 @@ class Preprocessing:
     def replace_na_in_tagline(self):
         self.df["tagline"] = self.df["tagline"].fillna("")
 
+
+    def replace_na_in_title(self):
+        self.df["title"] = self.df["title"].fillna("")
+
+    def drop_not_released(self):
+        self.df = self.df[self.df.status == "Released"]
+
+    def drop_not_relevant_columns(self):
+        not_relavant_columns = ["original title",
+                                "overview",
+                                "keywords",
+                                "title",
+                                "tagline",
+                                "status"]
+        self.df = self.df.drop(columns=not_relavant_columns)
+        
     def preprocess_production_countries(self):
         """
         replace production_countries column with a counter of production_countries
@@ -19,7 +35,6 @@ class Preprocessing:
         """
         self.df["production_countries"] = self.df.production_countries.fillna("[]")
         self.convert_json_to_dict("production_countries")
-
         # add column of production_countries count.
         self.df["production_countries_count"] = self.df.production_countries.apply(len)
         self.df.drop(columns=["production_countries"], inplace=True)
