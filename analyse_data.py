@@ -56,7 +56,6 @@ def length_of_tagline_effect(preprocessing):
     plot_revenue_or_vote_average_over_length_of_text(df, "tagline", "revenue")
     plot_revenue_or_vote_average_over_length_of_text(df, "tagline", "vote_average")
 
-
 def preprocess_production_countries(preprocessing):
     df = preprocessing.get_df()
     countries = df["production_countries"]
@@ -92,11 +91,14 @@ def convert_json_to_dict(preprocessing, column):
 
 def main():
     preprocessing = Preprocessing("train.csv")
-    length_of_tagline_effect(preprocessing)
-    length_of_title_effect(preprocessing)
-    # plot_corrolation(preprocessing)
 
+    # length_of_tagline_effect(preprocessing)
+    # length_of_title_effect(preprocessing)
+    # plot_corrolation(preprocessing)
+    # length_of_tagline_effect(preprocessing)
+    # plot_corrolation(preprocessing)
 
 if __name__ == '__main__':
     main()
+
 
