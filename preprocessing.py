@@ -103,22 +103,16 @@ class Preprocessing:
         self.turn_value_to_nan({'year': 2021}, ">")
         self.turn_values_to_int(['year'])
         self.turn_values_to_int(['month', 'day'], new_type=np.int8)
-        # print("******")
         self.turn_nan_value_to_mean(['year', 'day', 'month'])
         self.df = self.df.drop('release_date', axis=1)
-        # print(self.df.columns)
-        # return ['year','month', 'day' ]
 
     def preprocess_budget(self):
         added_cols = self.turn_value_to_nan({'budget': 10}, "<")
-        # my_cols = my_cols + added_cols
         self.turn_nan_value_to_mean(['budget'])
 
     def preprocess_belongs_to_collection(self):
-        self.df['belongs_to_collection'] = self.df['belongs_to_collection'].fillna(
-            "")
-        self.df['binary_collection'] = (
-                self.df["belongs_to_collection"] != "").astype(int)
+        self.df['belongs_to_collection'] = self.df['belongs_to_collection'].fillna("")
+        self.df['binary_collection'] = (self.df["belongs_to_collection"] != "").astype(int)
         self.df = self.df.drop('belongs_to_collection', axis=1)
 
     def preprocess_genres(self, train=True):
@@ -242,7 +236,7 @@ class Preprocessing:
                 self.df[f"original_language_{lan}"] = (lan == self.df["original_language"]).astype(int)
             self.df.drop(columns=["original_language"], inplace=True)
 
-    def process_all(self, train=True):
+    def process_revenue(self, train=True):
         if train:
             self.drop_not_released()
             self.delete_not_released_movies()
@@ -258,6 +252,27 @@ class Preprocessing:
         self.preprocess_cast()
         self.preprocess_crew()
         self.preprocess_homepage()
+        self.drop_not_relevant_columns()
+        return self.df
+
+    def process_vote_avergae(self, train=True):
+        if train:
+            self.drop_not_released()
+            self.delete_not_released_movies()
+        # self.original_language_feature(train)
+        self.preprocess_date()
+        # self.df.drop(columns=["release_date"], inplace=True)
+        # self.preprocess_budget()
+        self.preprocess_belongs_to_collection()
+        self.preprocess_genres(train)
+        self.preprocess_production_countries()
+        self.preprocess_production_companies()
+        self.preprocess_runtime()
+        self.preprocess_spoken_languages()
+        self.preprocess_cast()
+        self.preprocess_crew()
+        # self.preprocess_homepage()
+        self.df.drop(columns=["original_language", "budget", "homepage"], inplace=True)
         self.drop_not_relevant_columns()
         return self.df
 
