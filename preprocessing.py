@@ -11,4 +11,7 @@ class Preprocessing:
     def replace_na_in_tagline(self):
         self.df["tagline"] = self.df["tagline"].fillna("")
 
+    def replace_na_in_title(self):
+        self.df["title"] = self.df["title"].fillna("")
+
 
