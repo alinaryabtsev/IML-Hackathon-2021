@@ -2,7 +2,7 @@ from preprocessing import Preprocessing
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 import math
-import pickle
+import pickle5
 
 
 class Model:
@@ -19,11 +19,10 @@ class Model:
         self.revenue_regression = None
         self.vote_matrix = self.vote_matrix.to_numpy()
         self.revenue_matrix = self.revenue_matrix.to_numpy()
-        self.vote_hat = None
-        self.revenue_hat = None
 
     def process_test_data(self, csv_file):
-        return self.process_test_revenue_data(csv_file), self.process_test_vote_average_data(csv_file)
+        return self.process_test_revenue_data(csv_file), \
+               self.process_test_vote_average_data(csv_file)
 
     def process_test_vote_average_data(self, csv_file):
         preprocessing = Preprocessing(csv_file)
@@ -34,11 +33,14 @@ class Model:
         return preprocessing.process_revenue(False)
 
     def train_model(self):
-        self.vote_regression = RandomForestRegressor(max_depth=180,
+        self.vote_regression = RandomForestRegressor(n_estimators=100,
+                                                     max_depth=10,
                                                      random_state=0,
                                                      min_samples_split=5).fit(self.vote_matrix,
                                                                               self.vote_average_response)
-        self.revenue_regression = RandomForestRegressor(max_depth=180,
+
+        self.revenue_regression = RandomForestRegressor(n_estimators=100,
+                                                        max_depth=10,
                                                         random_state=0,
                                                         min_samples_split=7).fit(self.revenue_matrix,
                                                                                  self.revenue_response)
@@ -53,16 +55,15 @@ class Model:
         return math.sqrt(mean_squared_error(y_true, y_predicted))
 
     @classmethod
-    def serialize_model(cls, obj, filename="our_super_model"): #save obj in file
+    def serialize_model(cls, obj, filename):
         file = open(filename, 'wb')
-        pickle.dump(obj, file )
+        pickle5.dump(obj, file)
         file.close()
 
     @classmethod
-    def deserialize_model(cls, filename="our_super_model"): #loads obj from file
+    def deserialize_model(cls, filename):
         with open(filename, 'rb') as f:
-            obj = pickle.load(f)
-            print(type(obj))
+            obj = pickle5.load(f)
             return obj
 
 
