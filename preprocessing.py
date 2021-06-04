@@ -10,8 +10,11 @@ class Preprocessing:
     mean_val = 0
     genres_ids = set()
     original_languages = []
-    top_words = {1: [], 2: [], 3: [], 4: [], 5: [], 6: []}
-    top_words_in_overview_mean = dict()
+    top_words_rev = {1: [], 2: [], 3: [], 4: [], 5: [], 6: []}
+    top_words_in_overview_mean_rev = dict()
+    top_words_votes = {1: [], 2: [], 3: [], 4: [], 5: [], 6: []}
+    top_words_in_overview_mean_votes = dict()
+
 
     def __init__(self, filename):
         self.df = pd.read_csv(filename)
@@ -276,18 +279,21 @@ class Preprocessing:
                     tmp.append(x)
             keys_list = tmp
             #####    TO SAVE for feature_to_process   ####
-            # Preprocessing.top_words[1] = keys_list[-5:]
-            # Preprocessing.top_words[2] = keys_list[-12:-5]
-            # Preprocessing.top_words[3] = keys_list[-25:-12]
-            # Preprocessing.top_words[4] = keys_list[-50:-25]
-            # Preprocessing.top_words[5] = keys_list[-130:-50]
-            # Preprocessing.top_words[6] = keys_list[-500:-130]
-            Preprocessing.top_words[1] = keys_list[-2:]
-            Preprocessing.top_words[2] = keys_list[-7:-2]
-            Preprocessing.top_words[3] = keys_list[-20:-7]
-            Preprocessing.top_words[4] = keys_list[-50:-20]
-            Preprocessing.top_words[5] = keys_list[-130:-50]
-            Preprocessing.top_words[6] = keys_list[-500:-130]
+            if revenue:
+                Preprocessing.top_words_rev[1] = keys_list[-2:]
+                Preprocessing.top_words_rev[2] = keys_list[-7:-2]
+                Preprocessing.top_words_rev[3] = keys_list[-20:-7]
+                Preprocessing.top_words_rev[4] = keys_list[-50:-20]
+                Preprocessing.top_words_rev[5] = keys_list[-130:-50]
+                Preprocessing.top_words_rev[6] = keys_list[-500:-130]
+            else:
+                Preprocessing.top_words_votes[1] = keys_list[-2:]
+                Preprocessing.top_words_votes[2] = keys_list[-7:-2]
+                Preprocessing.top_words_votes[3] = keys_list[-20:-7]
+                Preprocessing.top_words_votes[4] = keys_list[-50:-20]
+                Preprocessing.top_words_votes[5] = keys_list[-130:-50]
+                Preprocessing.top_words_votes[6] = keys_list[-500:-130]
+
 
         # adding_to_df
         top_words_in_overview = {1: [], 2: [], 3: [], 4: [], 5: [], 6: []}
@@ -298,7 +304,11 @@ class Preprocessing:
                 word_num = len(tokenized_x)
                 for i in range(1, 7):
                     score_i = 0
-                    for s in Preprocessing.top_words[i]:
+                    if revenue:
+                        tmp_arr = Preprocessing.top_words_rev[i]
+                    else:
+                        tmp_arr = Preprocessing.top_words_votes[i]
+                    for s in tmp_arr:
                         if s in tokenized_x:
                             score_i += x.count(s)
                     score_i *= 1 / word_num
@@ -311,12 +321,22 @@ class Preprocessing:
             # add to class Attributes feature_to_process
             for i in range(1, 7):
                 np_arr = np.array(top_words_in_overview[i])
-                Preprocessing.top_words_in_overview_mean[i] = np.nanmean(np_arr)
+                if revenue:
+                    Preprocessing.top_words_in_overview_mean_rev[i] = np.nanmean(np_arr)
+                else:
+                    Preprocessing.top_words_in_overview_mean_votes[i] = np.nanmean(np_arr)
+
+
 
         for i in range(1, 7):
             self.df[f'top_words_{feature_to_process}_{str(i)}'] = top_words_in_overview[i]
-            self.df[f'top_words_{feature_to_process}_{str(i)}'].fillna(Preprocessing.top_words_in_overview_mean[i],
+            if revenue:
+                self.df[f'top_words_{feature_to_process}_{str(i)}'].fillna(Preprocessing.top_words_in_overview_mean_rev[i],
                                                                        inplace=True)
+            else:
+                self.df[f'top_words_{feature_to_process}_{str(i)}'].fillna(Preprocessing.top_words_in_overview_mean_votes[i],
+                                                                       inplace=True)
+
 
         self.df.drop(columns=["overview"], inplace=True)
 

@@ -5,6 +5,7 @@
 #
 ################################################
 from model import Model
+from preprocessing import Preprocessing
 
 
 def predict(csv_file):
@@ -14,8 +15,18 @@ def predict(csv_file):
     :param csv_file: csv with movies details. Same format as the training dataset csv.
     :return: a tuple - (a python list with the movies revenues, a python list with the movies avg_votes)
     """
-    model = Model()
-    model.train_model()
+    arr = Model.deserialize_model("train_serialized.pkl")
+    model = arr[0]
+    Preprocessing.mean_val = arr[1]
+    Preprocessing.genres_ids = arr[2]
+    Preprocessing.original_languages = arr[3]
+    Preprocessing.top_words_rev = arr[4]
+    Preprocessing.top_words_in_overview_mean_rev = arr[5]
+    Preprocessing.top_words_votes = arr[6]
+    Preprocessing.top_words_in_overview_mean_votes = arr[7]
+
+    # model = Model()
+    # model.train_model()
 
     revenue_data, vote_average_data = model.process_test_data(csv_file)
     revenue_true = revenue_data["revenue"]
@@ -26,7 +37,8 @@ def predict(csv_file):
     print(model.score(y_hat_revenue, revenue_true.to_numpy()))
     y_hat_votes = model.predict_vote_average(vote_average_data.to_numpy())
     print(model.score(y_hat_votes, vote_true.to_numpy()))
+    return (y_hat_revenue, y_hat_votes)
 
 
 if __name__ == '__main__':
-    predict("validation.csv")
+    predict("test.csv")
