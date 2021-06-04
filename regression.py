@@ -32,4 +32,4 @@ def predict(csv_file):
     revenue_data.drop(columns=["revenue"], inplace=True)
     y_hat_revenue = model.predict_revenue(revenue_data.to_numpy())
     y_hat_votes = model.predict_vote_average(vote_average_data.to_numpy())
-    return (y_hat_revenue, y_hat_votes)
+    return (y_hat_revenue.tolist(), y_hat_votes.tolist())
