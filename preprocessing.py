@@ -1,9 +1,6 @@
 import pandas as pd
 import numpy as np
 import ast
-from nltk.tokenize import sent_tokenize, word_tokenize
-from nltk.corpus import stopwords
-import nltk
 
 
 class Preprocessing:
@@ -30,6 +27,7 @@ class Preprocessing:
 
     def drop_not_relevant_columns(self):
         not_relavant_columns = ["id",
+                                "overview",
                                 "original_title",
                                 "keywords",
                                 "title",
@@ -243,103 +241,6 @@ class Preprocessing:
                 self.df[f"original_language_{lan}"] = (lan == self.df["original_language"]).astype(int)
             self.df.drop(columns=["original_language"], inplace=True)
 
-    def preprocess_overview(self, train=True, revenue=True):
-        """
-        Extracting all the words, tokenizing them and giving them weights according to revenue and vote_average,
-        to know which words affect the most
-        """
-        if revenue:
-            feature_to_process = 'revenue'
-        else:
-            feature_to_process = 'vote_average'
-        stop_words = set(stopwords.words("english"))
-
-        if train:
-            nltk.download('punkt')
-            s = ""
-            for x in self.df["overview"]:
-                s += x + "\nto\n" if type(x) == str else ""
-            nltk.download("stopwords")
-            words_in_s = word_tokenize(s)
-            words_dict_4_ = {word: 0 for word in words_in_s if word.casefold() not in stop_words}
-
-            for x, f_t_p in zip(self.df["overview"], self.df[feature_to_process]):
-                if type(x) == str and len(x) > 0:
-                    tokenized_x = word_tokenize(x + "\nto")
-                    tokenized_x = [w for w in tokenized_x if w.casefold() not in stop_words]
-                    word_num = len(tokenized_x)
-                    for w in tokenized_x:
-                        words_dict_4_[w] += (f_t_p* x.count(w)) / word_num
-            words_dict_4_ = dict(sorted(words_dict_4_.items(), key=lambda item: item[1]))
-
-            keys_list = list(words_dict_4_.keys())
-            tmp = []
-            for x in keys_list:
-                if len(x) > 2:
-                    tmp.append(x)
-            keys_list = tmp
-            #####    TO SAVE for feature_to_process   ####
-            if revenue:
-                Preprocessing.top_words_rev[1] = keys_list[-2:]
-                Preprocessing.top_words_rev[2] = keys_list[-7:-2]
-                Preprocessing.top_words_rev[3] = keys_list[-20:-7]
-                Preprocessing.top_words_rev[4] = keys_list[-50:-20]
-                Preprocessing.top_words_rev[5] = keys_list[-130:-50]
-                Preprocessing.top_words_rev[6] = keys_list[-500:-130]
-            else:
-                Preprocessing.top_words_votes[1] = keys_list[-2:]
-                Preprocessing.top_words_votes[2] = keys_list[-7:-2]
-                Preprocessing.top_words_votes[3] = keys_list[-20:-7]
-                Preprocessing.top_words_votes[4] = keys_list[-50:-20]
-                Preprocessing.top_words_votes[5] = keys_list[-130:-50]
-                Preprocessing.top_words_votes[6] = keys_list[-500:-130]
-
-
-        # adding_to_df
-        top_words_in_overview = {1: [], 2: [], 3: [], 4: [], 5: [], 6: []}
-        for x in self.df["overview"]:
-            if type(x) == str and len(x) > 0:
-                tokenized_x = word_tokenize(x + "\nto")
-                tokenized_x = [w for w in tokenized_x if w.casefold() not in stop_words]
-                word_num = len(tokenized_x)
-                for i in range(1, 7):
-                    score_i = 0
-                    if revenue:
-                        tmp_arr = Preprocessing.top_words_rev[i]
-                    else:
-                        tmp_arr = Preprocessing.top_words_votes[i]
-                    for s in tmp_arr:
-                        if s in tokenized_x:
-                            score_i += x.count(s)
-                    score_i *= 1 / word_num
-                    top_words_in_overview[i].append(score_i)
-            else:
-                for i in range(1, 7):
-                    top_words_in_overview[i].append(np.nan)
-
-        if train:
-            # add to class Attributes feature_to_process
-            for i in range(1, 7):
-                np_arr = np.array(top_words_in_overview[i])
-                if revenue:
-                    Preprocessing.top_words_in_overview_mean_rev[i] = np.nanmean(np_arr)
-                else:
-                    Preprocessing.top_words_in_overview_mean_votes[i] = np.nanmean(np_arr)
-
-
-
-        for i in range(1, 7):
-            self.df[f'top_words_{feature_to_process}_{str(i)}'] = top_words_in_overview[i]
-            if revenue:
-                self.df[f'top_words_{feature_to_process}_{str(i)}'].fillna(Preprocessing.top_words_in_overview_mean_rev[i],
-                                                                       inplace=True)
-            else:
-                self.df[f'top_words_{feature_to_process}_{str(i)}'].fillna(Preprocessing.top_words_in_overview_mean_votes[i],
-                                                                       inplace=True)
-
-
-        self.df.drop(columns=["overview"], inplace=True)
-
     def process_revenue(self, train=True):
         if train:
             self.drop_not_released()
@@ -356,7 +257,6 @@ class Preprocessing:
         self.preprocess_cast()
         self.preprocess_crew()
         self.preprocess_homepage()
-        self.preprocess_overview(train, True)
         self.drop_not_relevant_columns()
         return self.df
 
@@ -376,7 +276,6 @@ class Preprocessing:
         self.preprocess_spoken_languages()
         self.preprocess_cast()
         self.preprocess_crew()
-        self.preprocess_overview(train, False)
         # self.preprocess_homepage()
         self.df.drop(columns=["original_language", "budget", "homepage"], inplace=True)
         self.drop_not_relevant_columns()
